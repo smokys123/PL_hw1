@@ -51,16 +51,62 @@ bool BuildRegExpMatcher(const char* regexp, RegExpMatcher* regexp_matcher) {
   }
   //buildNFA on the basis of input regexp  and  find accept state;
   int accept = BuildNFA(regexp,init_state,&FSA_table,0,strlen(regexp));
-  cout <<"accept : " <<accept << endl;
-  accept_states.push_back(accept);
+  accept_states = findAllAccept(FSA_table,accept);
+
   SetStarProduction(&FSA_table, star_pairs);    //make star production  
   FindinputSymbols1(FSA_table);
   
-  NFAtoDFA1(FSA_table,accept_states ,regexp_matcher);
+  cout << "accept state : ";
+  for(int i=0;i< accept_states.size();i++) {
+      cout  << accept_states[i] << "  "; 
+  }
+  cout << endl;
   
-
+  NFAtoDFA1(FSA_table,accept_states ,regexp_matcher);
 
     return true;
+}
+
+bool RunRegExpMatcher(const RegExpMatcher& regexp_matcher, const char* str) {
+    set<int> cur_state;
+    cur_state = regexp_matcher.init_state;
+    int index = 0;
+    while(index < strlen(str) && MoveToNextState(regexp_matcher,cur_state, str[index]  )){
+        if(!CheckSymbols(str[index])){
+            cout << "input string is not in regular expression" << endl;
+        }
+        index++;
+    }
+    for(set<int>::iterator it=regexp_matcher.accept.begin(); it != regexp_matcher.accept.end();it++){
+      if(cur_state.find(*it) != cur_state.end() && strlen(str) == index)
+          return true;
+    }
+    
+    return false;
+}
+
+bool MoveToNextState(const RegExpMatcher& regexp_matcher, set<int>& curstate, const char symbol){
+    for(int i=0;i<regexp_matcher.FSA.size();i++){
+        if(regexp_matcher.FSA.find(make_pair(curstate,symbol)) != regexp_matcher.FSA.end() ){
+            curstate = (*regexp_matcher.FSA.find(make_pair(curstate,symbol))).second;
+        }
+           return true;
+        
+    }
+    return false;
+}
+
+bool CheckSymbols(const char str){
+    int check=0;
+    for(set<char>::iterator t=inputSymbols1.begin(); t!=inputSymbols1.end();t++){
+      if(str ==*t)
+          check++;
+    }
+    if(check!=0)
+        return true;
+    else
+        return false;
+
 }
 
 int BuildNFA(const char*regexp, int state, vector<FSATableElement>* FSA_table, int start_str, int end_str){
@@ -158,15 +204,17 @@ int BuildNFA(const char*regexp, int state, vector<FSATableElement>* FSA_table, i
           continue;
         }
         else if(regexp[j] == '.'){  //when any symbol 
-          if(regexp[j+1] == '*'){   //when next symbol is * 
-            pushNFAelement(FSA_table,regexp[j],cur_state,cur_state);
-            continue;
-          }
           if(cur_state == next_state){
             next_state++;
           }
-          pushNFAelement(FSA_table,regexp[j],cur_state,next_state);
-          cur_state++;
+          for(int k=0;k< all_char.size();k++){
+            pushNFAelement(FSA_table, all_char[k], cur_state,next_state);
+          }
+          if(regexp[j+1] == '*'){   //when next symbol is * 
+            pushNFAelement(FSA_table,'#',cur_state,next_state);
+            pushNFAelement(FSA_table,'#',next_state,cur_state);
+          }
+            cur_state++;
         }
         else if(regexp[j] == '*'){   //when star, find star range
           continue;
@@ -195,9 +243,6 @@ int BuildNFA(const char*regexp, int state, vector<FSATableElement>* FSA_table, i
     return save_indexVec[0];
 }
 
-bool RunRegExpMatcher(const RegExpMatcher& regexp_matcher, const char* str) {
-    return false;
-}
 
 //check input regexp is correct
 bool CheckRegexp(const char* regexp){
@@ -296,6 +341,17 @@ int CalculNextState(vector<int> state_list){
     return max;
 }
 
+vector<int >findAllAccept(vector<FSATableElement>& elements, int accept){
+    vector<int> temp;
+    temp.push_back(accept);
+    for(int i=0; i<elements.size();i++){
+      if(elements[i].str =='#' && elements[i].next_state == accept){
+          temp.push_back(elements[i].state);
+      }   
+    }
+    return temp;
+
+}
 //convert NFA to DFA method
 bool NFAtoDFA1(const std::vector<FSATableElement>& elements, const std::vector<int>& accept_states, RegExpMatcher* fsa) {
     
@@ -304,10 +360,11 @@ bool NFAtoDFA1(const std::vector<FSATableElement>& elements, const std::vector<i
     set<int>::iterator it1;
     set<set<int> > check_state;
     vector<FSATableElement> new_elements = FindState1(elements);
-    cout <<  "DFA grammer  "<<endl;
+    /*cout <<  "DFA grammer  "<<endl;
     for(int i=0;i< new_elements.size();i++){ 
         cout << "<" << new_elements[i].state << "," << new_elements[i].next_state << "," << new_elements[i].str << ">" << endl;
-    }	
+    }*/
+    cout << "-----DFA production----" << endl;
 	set<int> state;
     state.insert(1);
     queue.push(state);
@@ -428,6 +485,11 @@ set<int> StatebyEplison1(vector<pair<int,int> >& EpsilonState, set<int>& next_st
 //print FSA elements method
 bool PrintFSAelements1(set<int> state, set<int>next_states, char symbol){
     set<int>::iterator it1,it2;
+    it1 = state.begin();
+    it2 = next_states.begin();
+    if(*it1 == -1 || *it2 == -1){
+    }
+    else{
     cout <<"state : < ";
       for(it1 = state.begin() ; it1 != state.end() ;it1++)
           cout << *it1 << " ";
@@ -435,6 +497,7 @@ bool PrintFSAelements1(set<int> state, set<int>next_states, char symbol){
       for(it2 = next_states.begin(); it2 != next_states.end() ; it2++)
           cout << *it2 << " ";
       cout << ">"<<endl;      
+    }
 }
 
 

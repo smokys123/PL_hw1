@@ -36,11 +36,14 @@ void pushNFAelement(vector<FSATableElement>* FSA_table, char input_symbol, int s
 bool  CheckRegexp(const char* regexp);    //check correct regexp
 void SetStarProduction(vector<FSATableElement>* FSA_table, stack<pair<int,int> > pairs);
 int CalculNextState(vector<int> state_list);
+vector<int >findAllAccept(vector<FSATableElement>& elements, int accept);
 
 bool NFAtoDFA1(const std::vector<FSATableElement>& elements, const std::vector<int>& accept_states, RegExpMatcher* fsa);
 vector<pair<int,int> > FindAllEpsilon1(const std::vector<FSATableElement>& elements);
 vector<FSATableElement> FindState1(const std::vector<FSATableElement>& elements);
 set<int> StatebyEplison1(vector<pair<int,int> >& EpsilonState, set<int>& next_state,int state);
 bool PrintFSAelements1(set<int> state, set<int>next_states, char symbol);
+bool MoveToNextState(const RegExpMatcher& regexp_matcher, set<int>& curstate, const char symbol);
+bool CheckSymbols(const char str);
 #endif  //_PL_HOMEWORK_REGEXP_MATCHER_H_
 
